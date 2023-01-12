@@ -1,0 +1,542 @@
+---
+title: "508 TOD San Diego"
+author: "Ann Zhang"
+date: "2022-09-12"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    code_folding: hide
+    toc: yes
+    toc_float: yes
+---
+
+
+San Diego, lying at the southernmost end of the state of California, hosts the famous La Jolla beach (and its sea lion residents), vibrant local culture under Mexican influence, and the San Diego Zoo and Safari Park. This piece of work intends to reveal the influence of Transit-Oriented Development (TOD) in San Diego on local communities (e.g., population and housing). This study also includes longitudinal comparisons, looking at changes over the 10-year period from 2009 to 2019. 
+
+To narrow down the scope of research, this piece only covers the three trolley lines, namely, the Blue Line, Green Line, and Orange Line. Some other aspects of the San Diego TOD include the bus systems, which runs both in the metropolitan area and the northern counties, and the coaster line, which links the downtown to the old town, a historical site and popular tourist attraction. Those aspects are not included in this research, as they are less utilized in comparison to the trolley lines.
+
+## Disclaimer 
+Due to the fact that some of the northern stops of the Blue Line were newly constructed post-2021, some of the pre-2021 analysis may not be the most accurate in the northern parts, since the stops were not in place yet in 2009 and/or 2019. 
+
+## Acknowledgement 
+This study is completed in collaboration with Ben Keel, Kathleen Scopis, and Troy (Zhonghua) Yang. 
+
+# Acquiring & Processing Data
+
+The census data is acquired from ACS and data of trolley stations is acquired from San Diego Open GIS Data Portal (https://sdgis-sandag.opendata.arcgis.com/). Color palates are acquired from online resources. The coordinate system is adjusted for San Diego, in meters. 
+
+
+```{r results='hide', warning= FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r results='hide', warning= FALSE, message=FALSE}
+library(tidyverse)
+library(tidycensus)
+library(sf)
+library(kableExtra)
+library(dplyr)
+
+options(scipen=999)
+options(tigris_class = "sf")
+
+source("https://raw.githubusercontent.com/urbanSpatial/Public-Policy-Analytics-Landing/master/functions.r")
+
+Pink <- c("#ffffff","#f9f4f4","#f0e4e4", "#e7d3d3", "#dec3c3")
+Blue <- c("#f8fbff", "#eaf4ff", "#d6eaff", "#add6ff", "#84c1ff")
+Violet <- c("#ffffff", "#f7f7f7", "#dfe3ee", "#8b9dc3",  "#58668b")
+Green <- c("#e8f4ea", "#e0f0e3", "#d2e7d6","#c8e1cc", "#b8d8be")
+Purple <- c("#f3e0f7", "#e4c7f1", "#d1afe8", "#b998dd", "#9f82ce")
+Teal <- c("#d1eeea", "#a8dbd9", "#85c4c9", "#68abb8", "#4f90a6")
+palette5 <- c("#f0f9e8","#bae4bc","#7bccc4","#43a2ca","#0868ac")
+```
+
+```{r load_key, results='hide', warning = FALSE, eval = FALSE, message=FALSE}
+census_api_key("b3abcecc231fa30ccaa18cb5e854c30f1982fe3f", overwrite = TRUE, install = TRUE)
+readRenviron("~/.Renviron")
+```
+
+```{r results='hide', warning= FALSE, message=FALSE}
+tracts09 <- 
+  get_acs(geography = "tract", 
+          variables = c("B25026_001E","B02001_002E",
+                        "B15001_050E","B15001_009E",
+                        "B19013_001E","B25058_001E",
+                        "B06012_002E"), 
+          year=2009, state=06, county=073, 
+          geometry=TRUE) %>%
+  st_transform('ESRI:102411')
+
+tracts19 <- 
+  get_acs(geography = "tract", 
+          variables = c("B25026_001E","B02001_002E",
+                        "B15001_050E","B15001_009E",
+                        "B19013_001E","B25058_001E",
+                        "B06012_002E"), 
+          year=2019, state=06, county=073, 
+          geometry=TRUE) %>%
+  st_transform('ESRI:102411') 
+
+```
+
+
+```{r results='hide', warning= FALSE}
+SD_Stops <- st_read("https://seshat.datasd.org/sde/transit_stops_gtfs/transit_stops_datasd.geojson") %>%
+  filter(stop_agncy == "MTS")
+
+SD_StopsRoutes <- st_read("https://gissd.sandag.org/rdw/rest/services/Transportation/GTFS_Transit/MapServer/2/query?where=1%3D1&outFields=*&outSR=4326&f=json") %>%
+  filter(route_id == 510| route_id == 520| route_id == 530) %>%
+  rename(stop_uid = stop_UID) %>%
+  mutate(Line = case_when(route_id ==510 ~ "Blue Line",
+                          route_id ==520 ~ "Orange Line",
+                          route_id ==530 ~ "Green Line",))
+
+SD_All <- left_join(SD_StopsRoutes, SD_Stops, by= c("stop_uid")) %>%
+   dplyr::select(stop_name, Line, geometry, lat, lng)
+
+SD_Trolley <- SD_All[!duplicated(SD_All$stop_name),] %>%
+  st_as_sf(coords  = c("lng", "lat"),
+           crs = "EPSG:4326") %>%
+  st_transform('ESRI:102411')
+
+```
+
+
+
+# San Diego Trolley
+To visualize the locations of trolley stops in San Diego, a map of stops' relative locations in the San Diego county is produced. According to the map, trolley stops are mostly concentrated in the city of San Diego, in the south-west parts of the whole county. 
+
+```{r results='hide', warning= FALSE, message=FALSE, fig.align='center'}
+
+ggplot() + 
+  geom_sf(data=tracts19, fill = alpha(c("#F8F9FA")), color = "light grey") +
+  geom_sf(data=SD_Trolley$geometry,
+          aes(color = SD_Trolley$Line),
+          show.legend = "point", size = 1) +
+  scale_colour_manual(name ="Trolley Lines", values = c("blue","green","orange")) +
+  labs(title="San Diego Trolley Stops", 
+       subtitle="San Diego, CA", 
+       caption="Figure 1.1") +
+  mapTheme()
+
+```
+
+
+
+Apart from the city of San Diego, which is located at the south-western corner of the county, SD county also contains the Cleveland National Forest and Anza-Borrego Desert State Park in the central and eastern parts. Since those parts are barely populated, including data in those regions may interfere the analysis of the influence of TOD as all the less populated areas would be counted as "non-TOD" areas. For such reason, the regions of research is limited to the city of San Diego.  
+
+
+
+# Limiting Geographic Region
+
+
+This new map showcases the scope of this research. With limited scope, the analysis would be more accurate in determining TOD vs. Non-TOD areas and respective demographic profiles. 
+
+
+```{r results='hide', warning= FALSE, message=FALSE}
+trolleyMaxBuffer <- 
+    st_union(st_buffer(SD_Trolley, 14484)) %>%
+    st_sf()%>%
+    mutate(Legend = "Max Buffer") %>%
+    st_transform('ESRI:102411')
+
+tracts09_Lim <-
+  st_centroid(tracts09)[trolleyMaxBuffer,] %>%
+  st_drop_geometry() %>%
+  left_join(., dplyr::select(tracts09, GEOID), by = "GEOID") %>%
+  st_sf()%>%
+    st_transform('ESRI:102411')
+
+
+tracts19_Lim <-
+  st_centroid(tracts19)[trolleyMaxBuffer,] %>%
+  st_drop_geometry() %>%
+  left_join(., dplyr::select(tracts19, GEOID), by = "GEOID") %>%
+  st_sf()%>%
+    st_transform('ESRI:102411')
+
+allTracts_Lim <- rbind(tracts09_Lim, tracts19_Lim)
+```
+
+```{r results='hide', warning= FALSE, fig.width=5, fig.align='center'}
+
+ggplot() + 
+  geom_sf(data=tracts19_Lim, fill = alpha(c("#F8F9FA")), color = "light grey") +
+  geom_sf(data=SD_Trolley$geometry,
+          aes(color = SD_Trolley$Line),
+          show.legend = "point", size = 0.7) +
+  scale_colour_manual(name ="Trolley Lines", values = c("blue","green","orange")) +
+  labs(title="San Diego Trolley Stops", 
+       subtitle="San Diego, CA", 
+       caption="Figure 1.2") +
+  mapTheme()
+```
+
+
+
+
+# 10-Min Walking Distance
+
+The areas surrounding each stations within the 0.5 mile (805 meters) distance are portrayed with buffers outlined in black. 0.5 mile or 805 meters is the 10-min walking distance and a common benchmark used for examining the direct impact of a transit station on the local community. Those who live further are less likely to utilize this transportation, especially given the hot weather in Southern California. 
+
+```{r results='hide', warning= FALSE, message=FALSE}
+SD_Buffers <- 
+  rbind(
+    st_buffer(SD_Trolley$geometry, 805) %>%
+      st_sf() %>%
+      mutate(Legend = "Buffer") %>%
+      dplyr::select(Legend),
+    st_union(st_buffer(SD_Trolley$geometry, 805)) %>%
+      st_sf() %>%
+      mutate(Legend = "Unioned Buffer"))
+
+buffer <- filter(SD_Buffers, Legend=="Unioned Buffer") %>%
+  st_transform('ESRI:102411')
+
+```
+
+
+```{r results='hide', warning= FALSE, fig.width=5, fig.align='center'}
+
+ggplot() + 
+  geom_sf(data=tracts19_Lim, fill = alpha(c("#F8F9FA")), color = "light grey") +
+  geom_sf(data=SD_Trolley$geometry,
+          aes(color = SD_Trolley$Line),
+          show.legend = "point", size = 0.7) +
+  scale_colour_manual(name ="Trolley Lines", values = c("blue","green","orange")) +
+  labs(title="San Diego Trolley Stops w/ 10-min Walk Rings", 
+       subtitle="San Diego, CA", 
+       caption="Figure 1.3") +
+  geom_sf(data=buffer, color="black", fill=NA) +
+  mapTheme()
+
+```
+
+
+# TOD vs. Non-TOD Comparisons (2009 vs. 2019)
+
+This section includes four longitudinal comparisons looking at indicators (i.e., population, rent, median household income, and poverty rate) in 2009 and 2019, respectively. To further illustrate the impact of TOD on those indicators, 10-min walk rings from each station is portrayed on maps as well. 
+
+
+```{r results='hide', warning= FALSE, fig.width=10, fig.align='left'}
+
+Pop09_19 <- 
+  rbind(
+      tracts09_Lim %>%
+      filter(variable=="B25026_001") %>%
+      mutate(year=2009), 
+      tracts19_Lim %>%
+      filter(variable=="B25026_001") %>%
+      mutate(year=2019) )
+
+ggplot() +
+  geom_sf(data = Pop09_19, aes(fill = q5(estimate), group=year), color=NA) +
+    scale_fill_manual(values = Blue,
+                    labels = qBr(Pop09_19, "estimate"),
+                    name = "Popluation\n(Quintile Breaks)") +
+    facet_wrap(~year) +
+    labs(title = "Population in occupied housing", subtitle = "San Diego; 2009 vs. 2019", caption="Figure 2.1") +
+    mapTheme() + theme(plot.title = element_text(size=22)) +
+    geom_sf(data=buffer, color="black", fill=NA)
+
+
+```
+
+
+```{r results='hide', warning= FALSE, fig.width=10, fig.align='left'}
+
+Rent09_19 <- 
+  rbind(
+      tracts09_Lim %>%
+      filter(variable=="B25058_001") %>%
+      mutate(year=2009),
+      tracts19_Lim %>%
+      filter(variable=="B25058_001") %>%
+      mutate(year=2019))
+
+ggplot() +
+  geom_sf(data = Rent09_19, aes(fill = q5(estimate), group=year), color=NA) +
+    scale_fill_manual(values = Pink,
+                    labels = qBr(Rent09_19, "estimate"),
+                    name = "Rent ($)\n(Quintile Breaks)") +
+    facet_wrap(~year) +
+    labs(title = "Monthly Rent", subtitle = "San Diego; 2009 vs. 2019", caption="Figure 2.2") +
+    mapTheme() + theme(plot.title = element_text(size=22)) +
+    geom_sf(data=buffer, color="black", fill=NA)
+
+
+```
+
+
+
+```{r results='hide', warning= FALSE, fig.width=10, fig.align='left'}
+HHinc09_19 <- 
+  rbind(
+      tracts09_Lim %>%
+      filter(variable=="B19013_001") %>%
+      mutate(year=2009),
+      tracts19_Lim %>%
+      filter(variable=="B19013_001") %>%
+      mutate(year=2019))
+
+ggplot() +
+  geom_sf(data = HHinc09_19, aes(fill = q5(estimate), group=year), color=NA) +
+    scale_fill_manual(values = Green,
+                    labels = qBr(HHinc09_19, "estimate"),
+                    name = "HH Income ($)\n(Quintile Breaks)") +
+    facet_wrap(~year) +
+    labs(title = "Median Household Income in the past 12 months", subtitle = "San Diego; 2009 vs. 2019", caption="Figure 2.3") +
+    mapTheme() + theme(plot.title = element_text(size=22)) +
+    geom_sf(data=buffer, color="black", fill=NA)
+
+
+```
+
+
+```{r results='hide', warning= FALSE, fig.width=10, fig.align='left'}
+Pov09_19 <- 
+  rbind(
+      tracts09_Lim %>%
+      filter(variable=="B06012_002") %>%
+      mutate(year=2009),
+      tracts19_Lim %>%
+      filter(variable=="B06012_002") %>%
+      mutate(year=2019))
+
+ggplot() +
+  geom_sf(data = Pov09_19, aes(fill = q5(estimate), group=year), color=NA) +
+    scale_fill_manual(values =  Purple,
+                    labels = qBr(Pov09_19, "estimate"),
+                    name = "Poverty Rate\n(Quintile Breaks)") +
+    facet_wrap(~year) +
+    labs(title = "Poverty (Below 100% of the Poverty Level)", subtitle = "San Diego; 2009 vs. 2019", caption="Figure 2.4") +
+    mapTheme() + theme(plot.title = element_text(size=22)) +
+    geom_sf(data=buffer, color="black", fill=NA)
+
+```
+
+
+Based on the maps above, we can see a general increasing trend in population and rent in both the TOD and non-TOD areas, while there is less noticeable growth in median household income in poverty rate. However, the median household income in TOD areas are lower than non-TOD areas (especially comparing to northern and south-eastern parts of selected areas), which indicates that households with medium to higher income are less willing to live close to the TOD stops. 
+
+More detailed analysis of the TOD vs. non-TOD comparisons will be provided in accompaniment with the following section with a table and a chart. 
+
+
+```{r results='hide', warning= FALSE}
+tracts09 <-
+  tracts09 %>%
+  dplyr::select( -NAME, -moe) %>%
+  spread(variable, estimate) %>%
+  st_transform('ESRI:102411') %>%
+  rename(TotalPop = B25026_001, 
+         Whites = B02001_002,
+         FemaleBachelors = B15001_050, 
+         MaleBachelors = B15001_009,
+         MedHHInc = B19013_001, 
+         MedRent = B25058_001,
+         TotalPoverty = B06012_002) %>%
+  dplyr::select(-starts_with("B")) %>%
+  mutate(pctWhite = ifelse(TotalPop > 0, Whites / TotalPop,0),
+         pctBachelors = ifelse(TotalPop > 0, ((FemaleBachelors + MaleBachelors) / TotalPop),0),
+         pctPoverty = ifelse(TotalPop > 0, TotalPoverty / TotalPop, 0),
+         year = "2009")
+
+```
+
+```{r results='hide', warning= FALSE}
+tracts19 <-
+  tracts19 %>%
+  dplyr::select( -NAME, -moe) %>%
+  spread(variable, estimate) %>%
+  st_transform('ESRI:102411') %>%
+  rename(TotalPop = B25026_001, 
+         Whites = B02001_002,
+         FemaleBachelors = B15001_050, 
+         MaleBachelors = B15001_009,
+         MedHHInc = B19013_001, 
+         MedRent = B25058_001,
+         TotalPoverty = B06012_002) %>%
+  dplyr::select(-starts_with("B")) %>%
+  mutate(pctWhite = ifelse(TotalPop > 0, Whites / TotalPop,0),
+         pctBachelors = ifelse(TotalPop > 0, ((FemaleBachelors + MaleBachelors) / TotalPop),0),
+         pctPoverty = ifelse(TotalPop > 0, TotalPoverty / TotalPop, 0),
+         year = "2019")
+
+allTracts <- rbind(tracts19,tracts09)
+```
+
+```{r results='hide', warning=FALSE, message=FALSE}
+tracts09_Lim <-
+  st_centroid(tracts09)[trolleyMaxBuffer,] %>%
+  st_drop_geometry() %>%
+  left_join(., dplyr::select(tracts09, GEOID), by = "GEOID") %>%
+  st_sf()%>%
+    st_transform('ESRI:102411')
+
+
+tracts19_Lim <-
+  st_centroid(tracts19)[trolleyMaxBuffer,] %>%
+  st_drop_geometry() %>%
+  left_join(., dplyr::select(tracts19, GEOID), by = "GEOID") %>%
+  st_sf()%>%
+    st_transform('ESRI:102411')
+
+allTracts_Lim <- rbind(tracts09_Lim, tracts19_Lim)
+```
+
+
+```{r}
+
+selection_SD1 <- tracts19_Lim %>% 
+  st_join(buffer, join = st_intersects) %>% 
+  filter(!is.na(Legend)) %>% 
+  dplyr::select(TotalPop) %>%
+  mutate(Selection_Type = "Spatial Intersects")
+
+```
+
+
+# TOD vs. non-TOD: Indicators
+
+A table and a chart comparing five indicators, namely, the percentage of people who obtained bachelors degree, percentage of poverty, percentage of white population, population, and monthly rent, are compared across the TOD (shown in purple) and non-TOD (shown in yellow) areas. 
+
+```{r warning= FALSE, message=FALSE}
+
+SDallTracts.group <-  
+  rbind(
+    st_centroid(allTracts_Lim)[buffer,] %>%
+      st_drop_geometry() %>%
+      left_join(allTracts_Lim) %>%
+      st_sf() %>%
+      mutate(TOD = "TOD"),
+    st_centroid(allTracts_Lim)[buffer, op = st_disjoint] %>%
+      st_drop_geometry() %>%
+      left_join(allTracts_Lim) %>%
+      st_sf() %>%
+      mutate(TOD = "Non-TOD")) %>%
+  mutate(MedRent.inf = ifelse(year == "2009", MedRent * 1.19, MedRent)) 
+
+SDallTracts.Summary <- 
+  st_drop_geometry(SDallTracts.group) %>%
+  group_by(year, TOD) %>%
+  summarize(Rent = mean(MedRent, na.rm = T),
+            Population = mean(TotalPop, na.rm = T),
+            Percent_White = mean(pctWhite, na.rm = T),
+            Percent_Bach = mean(pctBachelors, na.rm = T),
+            Percent_Poverty = mean(pctPoverty, na.rm = T)) 
+
+kable(SDallTracts.Summary, format = "html", caption ="Table 1") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+  
+
+```
+
+
+
+
+To better visualize the comparisons, the same set of data is used to produce the following bar chart. According to this chart, we can identify several noticeable trends. THe poverty rate is significantly higher in TOD areas while the Rent is higher in non-TOD areas, both in 2009 and 2019. The population is also higher in non-TOD areas. Those trends may suggest a tendency for higher-income households to live further from the transit stations, and TOD is not particularly an incentive for many medium to high income households. 
+
+
+```{r results='hide', warning= FALSE, message=FALSE, fig.width=10, fig.height=6, fig.align='center'}
+
+SDallTracts.Summary %>%
+  gather(Variable, Value, -year, -TOD) %>%
+  ggplot(aes(year, Value, fill = TOD)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~Variable, scales = "free", ncol=5) +
+  theme(strip.text.x = element_text(size = 3)) +
+  scale_fill_manual(values = c("#FFDD94", "#CCABDB")) +
+  labs(title = "Indicators Differences Across Time and Space", subtitle = "San Diego, CA; 2009 vs. 2019", caption = "Figure 3") +
+  plotTheme() + theme(legend.position="bottom")
+```
+
+
+
+# Population & Rent near Trolley Stops
+
+The following two maps provides more context for explaining intra-group variance within the TOD areas. They illustrate differences in population and rent across different trolley stops. Hence, we can see that apart from TOD vs. Non-TOD, there are many other possible reasons resulting differences in population and rent. 
+
+```{r results='hide', warning= FALSE, message=FALSE, fig.align='center'}
+BufferOnly <- filter(SD_Buffers, Legend == "Buffer") %>%
+  st_transform('ESRI:102411') %>%
+  tibble::rowid_to_column("ID")
+
+SD_Station <- st_join(BufferOnly, tracts19_Lim, join = st_intersects) %>%
+  dplyr::select(ID, Legend, GEOID, TotalPop, MedRent, geometry) %>%
+  dplyr::group_by(ID) %>%
+  summarize(pop=mean(TotalPop, na.rm = TRUE), rent=mean(MedRent, na.rm = TRUE))
+
+
+ggplot() +
+  geom_sf(data = tracts19_Lim, fill = alpha(c("#EFF7F6")), color = "grey") +
+  geom_sf(data = st_centroid(SD_Station),
+          pch = 21,
+          aes(size = pop),
+          fill = alpha(c("#84c1ff"), 0.7),
+          col = "grey20") +
+  labs(title = "Population Distribution Surrounding Trolley Stops", subtitle = "San Diego, CA (2019)", size = "Population", caption = "Figure 4.1") +
+  scale_size(range = c(1, 7)) + 
+  mapTheme()
+  
+```
+
+
+```{r results='hide', warning= FALSE, fig.align='center'}
+ggplot() +
+  geom_sf(data = tracts19_Lim, fill = alpha(c("#FEF5EE")), color = "grey") +
+  geom_sf(data = st_centroid(SD_Station),
+          pch = 21,
+          aes(size = rent),
+          fill = alpha(c("#e3c9c9"), 0.8),
+          col = "grey10") +
+  labs(title = "Rent Surrounding Trolley Stops", subtitle = "San Diego, CA (2019)",size = "Rent ($)", caption = "Figure 4.2") +
+  scale_size(range = c(1, 5)) + 
+  mapTheme()
+```
+
+
+
+# Rent vs. Distance
+
+This graph reveals an interesting phenomena of which the further a house locates from a trolley station, the higher its rent gets, until we reach the 8 mile distance where the trend doesn't apply any more. 
+
+
+```{r results ='hide', warning = FALSE, message = FALSE}
+
+allTracts_Lim <- rbind(tracts19_Lim,tracts09_Lim)
+
+allTracts.rings <-
+  st_join(st_centroid(dplyr::select(allTracts_Lim, GEOID, year)), 
+          multipleRingBuffer(st_union(SD_Trolley), 14484, 805)) %>%
+  st_drop_geometry() %>%
+  left_join(dplyr::select(allTracts, GEOID, MedRent, year), 
+            by=c("GEOID"="GEOID", "year"="year")) %>%
+  st_sf() %>%
+  mutate(distance = distance / 1610) 
+
+```
+
+```{r results='hide', warning= FALSE, message=FALSE, fig.align='center'}
+
+allTracts.rings.summary <- allTracts.rings %>%
+  dplyr::select(year, distance, MedRent) %>%
+  st_drop_geometry() %>%
+  group_by(year, distance) %>%
+  summarize(Rent=median(MedRent, na.rm=TRUE))
+
+ggplot(data=allTracts.rings.summary, aes(x=distance, y=Rent, group=year)) +
+  geom_line(aes(color=year), size=2) +
+  geom_point(aes(color=year), size=3.5) +
+  scale_color_manual(values = c("#bdc9e1", "016c59")) +
+  labs(title = "Rent vs. Distance to Trolley Stations", subtitle = "San Diego, CA; 10 year comparison", caption = "Figure 5") +
+  xlab("Distance to Trolley Station (Miles)") +
+  ylab("Average Rent ($)")
+```
+
+# Conclusion
+
+In conclusion, the data suggests a tendency for people to live further from the trolley stops, since we observe lower population, lower rent, and higher poverty rate closer to the stations. Figure 5 explicitly shows that further distance from trolley stations indicate a higher rent, until it passes the 8 mile mark. Therefore, households, especially medium to higher income households, are less likely to live next to transit stops, and they do not value TOD when it comes to choosing location. 
+
+However, this study falls short in making a holistic analysis of TOD's impact. Some of the trends we see here in this study maybe due to other confounding variables or social factors. For instance, many transit stops connects famous tourist spots in San Diego, and people may be less willing to live near crowded tourist spots. As mentioned above, many of the TOD vs. non-TOD analysis takes the newly constructed stops into consideration, which may distort accuracy of this study in reflecting reality back in 2009 and 2019.  
+
+
