@@ -3,29 +3,33 @@ title: "508 TOD San Diego"
 author: "Ann Zhang"
 date: "2022-09-12"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     code_folding: hide
-    toc: yes
+    toc: true
+    toc_dept: 2
     toc_float: yes
+    theme: cosmo
+    highlight: tango
+    collapsed: true
+  pdf_document:
+    toc: yes
 ---
 
-
-San Diego, lying at the southernmost end of the state of California, hosts the famous La Jolla beach (and its sea lion residents), vibrant local culture under Mexican influence, and the San Diego Zoo and Safari Park. This piece of work intends to reveal the influence of Transit-Oriented Development (TOD) in San Diego on local communities (e.g., population and housing). This study also includes longitudinal comparisons, looking at changes over the 10-year period from 2009 to 2019. 
+San Diego, lying at the southernmost end of the state of California, hosts the famous La Jolla beach (and its sea lion residents), vibrant local culture under Mexican influence, and the San Diego Zoo and Safari Park. This piece of work intends to reveal the influence of Transit-Oriented Development (TOD) in San Diego on local communities (e.g., population and housing). This study also includes longitudinal comparisons, looking at changes over the 10-year period from 2009 to 2019.
 
 To narrow down the scope of research, this piece only covers the three trolley lines, namely, the Blue Line, Green Line, and Orange Line. Some other aspects of the San Diego TOD include the bus systems, which runs both in the metropolitan area and the northern counties, and the coaster line, which links the downtown to the old town, a historical site and popular tourist attraction. Those aspects are not included in this research, as they are less utilized in comparison to the trolley lines.
 
-## Disclaimer 
-Due to the fact that some of the northern stops of the Blue Line were newly constructed post-2021, some of the pre-2021 analysis may not be the most accurate in the northern parts, since the stops were not in place yet in 2009 and/or 2019. 
+## Disclaimer
 
-## Acknowledgement 
-This study is completed in collaboration with Ben Keel, Kathleen Scopis, and Troy (Zhonghua) Yang. 
+Due to the fact that some of the northern stops of the Blue Line were newly constructed post-2021, some of the pre-2021 analysis may not be the most accurate in the northern parts, since the stops were not in place yet in 2009 and/or 2019.
+
+## Acknowledgement
+
+This study is completed with assistance from Ben Keel, Kathleen Scopis, and Troy (Zhonghua) Yang.
 
 # Acquiring & Processing Data
 
-The census data is acquired from ACS and data of trolley stations is acquired from San Diego Open GIS Data Portal (https://sdgis-sandag.opendata.arcgis.com/). Color palates are acquired from online resources. The coordinate system is adjusted for San Diego, in meters. 
-
+The census data is acquired from ACS and data of trolley stations is acquired from San Diego Open GIS Data Portal (<https://sdgis-sandag.opendata.arcgis.com/>). Color palates are acquired from online resources. The coordinate system is adjusted for San Diego, in meters.
 
 ```{r results='hide', warning= FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -80,7 +84,6 @@ tracts19 <-
 
 ```
 
-
 ```{r results='hide', warning= FALSE}
 SD_Stops <- st_read("https://seshat.datasd.org/sde/transit_stops_gtfs/transit_stops_datasd.geojson") %>%
   filter(stop_agncy == "MTS")
@@ -102,10 +105,9 @@ SD_Trolley <- SD_All[!duplicated(SD_All$stop_name),] %>%
 
 ```
 
-
-
 # San Diego Trolley
-To visualize the locations of trolley stops in San Diego, a map of stops' relative locations in the San Diego county is produced. According to the map, trolley stops are mostly concentrated in the city of San Diego, in the south-west parts of the whole county. 
+
+To visualize the locations of trolley stops in San Diego, a map of stops' relative locations in the San Diego county is produced. According to the map, trolley stops are mostly concentrated in the city of San Diego, in the south-west parts of the whole county.
 
 ```{r results='hide', warning= FALSE, message=FALSE, fig.align='center'}
 
@@ -122,17 +124,11 @@ ggplot() +
 
 ```
 
-
-
-Apart from the city of San Diego, which is located at the south-western corner of the county, SD county also contains the Cleveland National Forest and Anza-Borrego Desert State Park in the central and eastern parts. Since those parts are barely populated, including data in those regions may interfere the analysis of the influence of TOD as all the less populated areas would be counted as "non-TOD" areas. For such reason, the regions of research is limited to the city of San Diego.  
-
-
+Apart from the city of San Diego, which is located at the south-western corner of the county, SD county also contains the Cleveland National Forest and Anza-Borrego Desert State Park in the central and eastern parts. Since those parts are barely populated, including data in those regions may interfere the analysis of the influence of TOD as all the less populated areas would be counted as "non-TOD" areas. For such reason, the regions of research is limited to the city of San Diego.
 
 # Limiting Geographic Region
 
-
-This new map showcases the scope of this research. With limited scope, the analysis would be more accurate in determining TOD vs. Non-TOD areas and respective demographic profiles. 
-
+This new map showcases the scope of this research. With limited scope, the analysis would be more accurate in determining TOD vs. Non-TOD areas and respective demographic profiles.
 
 ```{r results='hide', warning= FALSE, message=FALSE}
 trolleyMaxBuffer <- 
@@ -173,12 +169,9 @@ ggplot() +
   mapTheme()
 ```
 
-
-
-
 # 10-Min Walking Distance
 
-The areas surrounding each stations within the 0.5 mile (805 meters) distance are portrayed with buffers outlined in black. 0.5 mile or 805 meters is the 10-min walking distance and a common benchmark used for examining the direct impact of a transit station on the local community. Those who live further are less likely to utilize this transportation, especially given the hot weather in Southern California. 
+The areas surrounding each stations within the 0.5 mile (805 meters) distance are portrayed with buffers outlined in black. 0.5 mile or 805 meters is the 10-min walking distance and a common benchmark used for examining the direct impact of a transit station on the local community. Those who live further are less likely to utilize this transportation, especially given the hot weather in Southern California.
 
 ```{r results='hide', warning= FALSE, message=FALSE}
 SD_Buffers <- 
@@ -196,7 +189,6 @@ buffer <- filter(SD_Buffers, Legend=="Unioned Buffer") %>%
 
 ```
 
-
 ```{r results='hide', warning= FALSE, fig.width=5, fig.align='center'}
 
 ggplot() + 
@@ -213,11 +205,9 @@ ggplot() +
 
 ```
 
-
 # TOD vs. Non-TOD Comparisons (2009 vs. 2019)
 
-This section includes four longitudinal comparisons looking at indicators (i.e., population, rent, median household income, and poverty rate) in 2009 and 2019, respectively. To further illustrate the impact of TOD on those indicators, 10-min walk rings from each station is portrayed on maps as well. 
-
+This section includes four longitudinal comparisons looking at indicators (i.e., population, rent, median household income, and poverty rate) in 2009 and 2019, respectively. To further illustrate the impact of TOD on those indicators, 10-min walk rings from each station is portrayed on maps as well.
 
 ```{r results='hide', warning= FALSE, fig.width=10, fig.align='left'}
 
@@ -243,7 +233,6 @@ ggplot() +
 
 ```
 
-
 ```{r results='hide', warning= FALSE, fig.width=10, fig.align='left'}
 
 Rent09_19 <- 
@@ -268,8 +257,6 @@ ggplot() +
 
 ```
 
-
-
 ```{r results='hide', warning= FALSE, fig.width=10, fig.align='left'}
 HHinc09_19 <- 
   rbind(
@@ -293,7 +280,6 @@ ggplot() +
 
 ```
 
-
 ```{r results='hide', warning= FALSE, fig.width=10, fig.align='left'}
 Pov09_19 <- 
   rbind(
@@ -316,11 +302,9 @@ ggplot() +
 
 ```
 
+Based on the maps above, we can see a general increasing trend in population and rent in both the TOD and non-TOD areas, while there is less noticeable growth in median household income in poverty rate. However, the median household income in TOD areas are lower than non-TOD areas (especially comparing to northern and south-eastern parts of selected areas), which indicates that households with medium to higher income are less willing to live close to the TOD stops.
 
-Based on the maps above, we can see a general increasing trend in population and rent in both the TOD and non-TOD areas, while there is less noticeable growth in median household income in poverty rate. However, the median household income in TOD areas are lower than non-TOD areas (especially comparing to northern and south-eastern parts of selected areas), which indicates that households with medium to higher income are less willing to live close to the TOD stops. 
-
-More detailed analysis of the TOD vs. non-TOD comparisons will be provided in accompaniment with the following section with a table and a chart. 
-
+More detailed analysis of the TOD vs. non-TOD comparisons will be provided in accompaniment with the following section with a table and a chart.
 
 ```{r results='hide', warning= FALSE}
 tracts09 <-
@@ -384,7 +368,6 @@ tracts19_Lim <-
 allTracts_Lim <- rbind(tracts09_Lim, tracts19_Lim)
 ```
 
-
 ```{r}
 
 selection_SD1 <- tracts19_Lim %>% 
@@ -395,10 +378,9 @@ selection_SD1 <- tracts19_Lim %>%
 
 ```
 
-
 # TOD vs. non-TOD: Indicators
 
-A table and a chart comparing five indicators, namely, the percentage of people who obtained bachelors degree, percentage of poverty, percentage of white population, population, and monthly rent, are compared across the TOD (shown in purple) and non-TOD (shown in yellow) areas. 
+A table and a chart comparing five indicators, namely, the percentage of people who obtained bachelors degree, percentage of poverty, percentage of white population, population, and monthly rent, are compared across the TOD (shown in purple) and non-TOD (shown in yellow) areas.
 
 ```{r warning= FALSE, message=FALSE}
 
@@ -431,11 +413,7 @@ kable(SDallTracts.Summary, format = "html", caption ="Table 1") %>%
 
 ```
 
-
-
-
-To better visualize the comparisons, the same set of data is used to produce the following bar chart. According to this chart, we can identify several noticeable trends. THe poverty rate is significantly higher in TOD areas while the Rent is higher in non-TOD areas, both in 2009 and 2019. The population is also higher in non-TOD areas. Those trends may suggest a tendency for higher-income households to live further from the transit stations, and TOD is not particularly an incentive for many medium to high income households. 
-
+To better visualize the comparisons, the same set of data is used to produce the following bar chart. According to this chart, we can identify several noticeable trends. THe poverty rate is significantly higher in TOD areas while the Rent is higher in non-TOD areas, both in 2009 and 2019. The population is also higher in non-TOD areas. Those trends may suggest a tendency for higher-income households to live further from the transit stations, and TOD is not particularly an incentive for many medium to high income households.
 
 ```{r results='hide', warning= FALSE, message=FALSE, fig.width=10, fig.height=6, fig.align='center'}
 
@@ -450,11 +428,9 @@ SDallTracts.Summary %>%
   plotTheme() + theme(legend.position="bottom")
 ```
 
-
-
 # Population & Rent near Trolley Stops
 
-The following two maps provides more context for explaining intra-group variance within the TOD areas. They illustrate differences in population and rent across different trolley stops. Hence, we can see that apart from TOD vs. Non-TOD, there are many other possible reasons resulting differences in population and rent. 
+The following two maps provides more context for explaining intra-group variance within the TOD areas. They illustrate differences in population and rent across different trolley stops. Hence, we can see that apart from TOD vs. Non-TOD, there are many other possible reasons resulting differences in population and rent.
 
 ```{r results='hide', warning= FALSE, message=FALSE, fig.align='center'}
 BufferOnly <- filter(SD_Buffers, Legend == "Buffer") %>%
@@ -480,7 +456,6 @@ ggplot() +
   
 ```
 
-
 ```{r results='hide', warning= FALSE, fig.align='center'}
 ggplot() +
   geom_sf(data = tracts19_Lim, fill = alpha(c("#FEF5EE")), color = "grey") +
@@ -494,12 +469,9 @@ ggplot() +
   mapTheme()
 ```
 
-
-
 # Rent vs. Distance
 
-This graph reveals an interesting phenomena of which the further a house locates from a trolley station, the higher its rent gets, until we reach the 8 mile distance where the trend doesn't apply any more. 
-
+This graph reveals an interesting phenomena of which the further a house locates from a trolley station, the higher its rent gets, until we reach the 8 mile distance where the trend doesn't apply any more.
 
 ```{r results ='hide', warning = FALSE, message = FALSE}
 
@@ -535,8 +507,6 @@ ggplot(data=allTracts.rings.summary, aes(x=distance, y=Rent, group=year)) +
 
 # Conclusion
 
-In conclusion, the data suggests a tendency for people to live further from the trolley stops, since we observe lower population, lower rent, and higher poverty rate closer to the stations. Figure 5 explicitly shows that further distance from trolley stations indicate a higher rent, until it passes the 8 mile mark. Therefore, households, especially medium to higher income households, are less likely to live next to transit stops, and they do not value TOD when it comes to choosing location. 
+In conclusion, the data suggests a tendency for people to live further from the trolley stops, since we observe lower population, lower rent, and higher poverty rate closer to the stations. Figure 5 explicitly shows that further distance from trolley stations indicate a higher rent, until it passes the 8 mile mark. Therefore, households, especially medium to higher income households, are less likely to live next to transit stops, and they do not value TOD when it comes to choosing location.
 
-However, this study falls short in making a holistic analysis of TOD's impact. Some of the trends we see here in this study maybe due to other confounding variables or social factors. For instance, many transit stops connects famous tourist spots in San Diego, and people may be less willing to live near crowded tourist spots. As mentioned above, many of the TOD vs. non-TOD analysis takes the newly constructed stops into consideration, which may distort accuracy of this study in reflecting reality back in 2009 and 2019.  
-
-
+However, this study falls short in making a holistic analysis of TOD's impact. Some of the trends we see here in this study maybe due to other confounding variables or social factors. For instance, many transit stops connects famous tourist spots in San Diego, and people may be less willing to live near crowded tourist spots. As mentioned above, many of the TOD vs. non-TOD analysis takes the newly constructed stops into consideration, which may distort accuracy of this study in reflecting reality back in 2009 and 2019.
